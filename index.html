@@ -718,7 +718,7 @@
         <div class="server-details">
           <div class="server-name">
             Main Server
-            <span class="badge">Primary</span>
+            <span class="badge">157.230.133.89</span>
           </div>
           <div class="server-stats">
             <div class="stat" id="activeCount">
@@ -841,7 +841,7 @@
     const SERVER = {
       id: 'main',
       name: 'Main Server',
-      url: 'http://157.230.133.89:2001/pair/',
+      url: 'http://157.230.133.89:2001',  // Base URL sans /pair
       maxSessions: 25,
       activeSessions: 0,
       isFull: false
@@ -933,7 +933,7 @@
         isLoadingSessions = true;
         refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
-        const response = await axios.get(`${currentServer.url}../sessions`, {
+        const response = await axios.get(`${currentServer.url}/sessions`, {
           timeout: 8000
         });
         
@@ -968,8 +968,14 @@
         
       } catch (error) {
         console.error('Error loading sessions:', error);
-        sessionsList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;"><i class="fas fa-exclamation-circle"></i> Cannot load sessions</div>';
-        showToast('Failed to load sessions', true);
+        sessionsList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;"><i class="fas fa-exclamation-circle"></i> Cannot connect to server</div>';
+        
+        // Show server as offline but don't block functionality
+        currentServer.activeSessions = 0;
+        currentServer.isFull = false;
+        updateServerDisplay();
+        
+        showToast('Cannot connect to server', true);
       } finally {
         isLoadingSessions = false;
         refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
@@ -1000,7 +1006,7 @@
       resetCodeBox();
       
       try {
-        const response = await axios.get(`${currentServer.url}${phoneNumber}`, {
+        const response = await axios.get(`${currentServer.url}/pair/${phoneNumber}`, {
           timeout: 45000
         });
         
@@ -1010,7 +1016,7 @@
           
           // Try to start session
           try {
-            await axios.get(`${currentServer.url}../start/${phoneNumber}`, {
+            await axios.get(`${currentServer.url}/start/${phoneNumber}`, {
               timeout: 5000
             });
           } catch (e) {
@@ -1029,8 +1035,10 @@
         let errorMsg = 'Failed to generate code';
         if (error.response?.data?.error) {
           errorMsg = error.response.data.error;
-        } else if (error.message.includes('timeout')) {
-          errorMsg = 'Request timeout - try again';
+        } else if (error.code === 'ECONNABORTED') {
+          errorMsg = 'Request timeout - server may be busy';
+        } else if (error.message) {
+          errorMsg = error.message;
         }
         showError(errorMsg);
         showToast('Generation failed', true);
