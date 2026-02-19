@@ -2,145 +2,371 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Backend Endpoint Tester</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Pairing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f0d;
+      --card: #111813;
+      --green: #25d366;
+      --green-glow: rgba(37, 211, 102, 0.18);
+      --green-dim: #1a9e4a;
+      --text: #e8f5e9;
+      --muted: #5a7a63;
+      --border: rgba(37, 211, 102, 0.15);
+      --radius: 16px;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 20px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
-    h1 { color: #38bdf8; }
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
+
+    /* Animated background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(37,211,102,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(37,211,102,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle grid lines */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(37,211,102,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,211,102,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
       width: 100%;
-      border-radius: 6px;
-      border: none;
+      max-width: 460px;
+      padding: 20px;
+      animation: fadeUp 0.6s ease both;
     }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--green);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(37,211,102,0.4);
+    }
+
+    .logo-icon svg { width: 26px; height: 26px; }
+
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+
+    .logo-text span { color: var(--green); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(37,211,102,0.08);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--green);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .field-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    input[type="tel"] {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="tel"]::placeholder { color: var(--muted); }
+
+    input[type="tel"]:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+
     button {
-      background: #22c55e;
-      color: #000;
-      font-weight: bold;
+      background: var(--green);
+      border: none;
+      border-radius: 10px;
+      color: #021a08;
       cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 14px 20px;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      white-space: nowrap;
     }
-    button.danger { background: #ef4444; color: #fff; }
-    button.secondary { background: #38bdf8; }
-    pre {
-      background: #020617;
-      padding: 10px;
-      border-radius: 6px;
-      overflow-x: auto;
+
+    button:hover {
+      background: #2fe070;
+      box-shadow: 0 0 16px rgba(37,211,102,0.4);
+    }
+
+    button:active { transform: scale(0.97); }
+
+    button:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Result area */
+    .result {
+      display: none;
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .result.show { display: block; }
+
+    /* Code display */
+    .code-box {
+      background: rgba(37,211,102,0.07);
+      border: 1px solid var(--green);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .code-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+
+    .code-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(37,211,102,0.5);
+      word-break: break-all;
+    }
+
+    .code-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
       margin-top: 10px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Error */
+    .error-box {
+      background: rgba(255, 70, 70, 0.08);
+      border: 1px solid rgba(255,70,70,0.3);
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #ff8080;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(2,26,8,0.3);
+      border-top-color: #021a08;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <!-- WhatsApp icon SVG -->
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 3C9.373 3 4 8.373 4 15c0 2.385.668 4.61 1.826 6.5L4 29l7.703-1.803A11.94 11.94 0 0016 28c6.627 0 12-5.373 12-12S22.627 3 16 3z" fill="#021a08"/>
+          <path d="M21.5 18.5c-.3-.15-1.8-.9-2.07-.99-.28-.1-.48-.15-.68.15-.2.3-.77.99-.95 1.19-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.68-2.08-.17-.3-.02-.46.13-.61.13-.13.3-.34.44-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.68-1.63-.93-2.23-.24-.58-.49-.5-.68-.51H12.2c-.18 0-.48.07-.74.34-.25.27-.97.95-.97 2.32 0 1.37 1 2.7 1.14 2.89.15.2 1.97 3.01 4.77 4.22.67.29 1.19.46 1.6.59.67.21 1.28.18 1.76.11.54-.08 1.65-.67 1.88-1.32.23-.65.23-1.2.16-1.32-.07-.12-.27-.2-.57-.34z" fill="#25d366"/>
+        </svg>
+      </div>
+      <div class="logo-text">WA<span>Pair</span></div>
+    </div>
 
-<h1>🧪 Backend Tester</h1>
-<p>Backend: <b>http://157.230.133.89:2001</b></p>
+    <div class="card">
+      <h1>Lier votre<br/><em>WhatsApp</em></h1>
+      <p class="subtitle">Entrez votre numéro avec indicatif pays (sans +)<br/>pour obtenir votre code de jumelage.</p>
 
-<button onclick="health()">🔍 Test Health (/)</button>
+      <div class="field-label">Numéro de téléphone</div>
+      <div class="input-row">
+        <input type="tel" id="phoneInput" placeholder="ex: 33612345678" maxlength="15"/>
+        <button id="pairBtn" onclick="requestCode()">Obtenir</button>
+      </div>
 
-<hr>
+      <div class="result" id="result"></div>
+    </div>
 
-<h3>▶ Start Session</h3>
-<input id="startId" placeholder="sessionId (ex: test123)" />
-<button onclick="startSession()">Start</button>
+    <div class="footer">Baileys Multi-Session &nbsp;·&nbsp; Pair Code Ready</div>
+  </div>
 
-<hr>
+  <script>
+    async function requestCode() {
+      const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+      const btn = document.getElementById('pairBtn');
+      const result = document.getElementById('result');
 
-<h3>🔗 Pair (WhatsApp)</h3>
-<input id="pairNum" placeholder="Numéro (ex: 554488138425)" />
-<button onclick="pair()">Pair</button>
+      if (!phone || phone.length < 6) {
+        showError('Veuillez entrer un numéro valide.');
+        return;
+      }
 
-<hr>
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Patientez...';
+      result.className = 'result';
+      result.innerHTML = '';
 
-<h3>📋 Sessions</h3>
-<button class="secondary" onclick="sessions()">List Sessions</button>
+      try {
+        const res = await fetch(`/pair/${phone}/`);
+        const data = await res.json();
 
-<hr>
+        if (data.ok && data.code) {
+          showCode(data.code, data.cleanNumber || phone);
+        } else {
+          showError(data.error || 'Une erreur est survenue.');
+        }
+      } catch (e) {
+        showError('Impossible de joindre le serveur.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Régénérer';
+      }
+    }
 
-<h3>⛔ Stop Session</h3>
-<input id="stopId" placeholder="sessionId" />
-<button class="danger" onclick="stopSession()">Stop</button>
+    function showCode(code, num) {
+      const result = document.getElementById('result');
+      result.innerHTML = `
+        <div class="code-box">
+          <div class="code-label">✅ Code de jumelage</div>
+          <div class="code-value">${escapeHtml(code)}</div>
+          <div class="code-hint">Pour le numéro +${escapeHtml(num)}</div>
+          <div class="code-hint" style="margin-top:6px">Entrez ce code dans WhatsApp → Appareils liés → Lier avec un numéro</div>
+        </div>`;
+      result.classList.add('show');
+    }
 
-<hr>
+    function showError(msg) {
+      const result = document.getElementById('result');
+      result.innerHTML = `<div class="error-box">⚠ ${escapeHtml(msg)}</div>`;
+      result.classList.add('show');
+    }
 
-<h3>🚪 Logout Session</h3>
-<input id="logoutId" placeholder="sessionId" />
-<button class="danger" onclick="logout()">Logout</button>
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
 
-<h3>📤 Réponse</h3>
-<pre id="output">---</pre>
-
-<script>
-const BASE = "http://panel-bilal.zone.id:2001";
-
-function show(data) {
-  document.getElementById("output").textContent =
-    typeof data === "string" ? data : JSON.stringify(data, null, 2);
-}
-
-async function health() {
-  try {
-    const r = await fetch(`${BASE}/`);
-    show(await r.text());
-  } catch (e) {
-    show(e.message);
-  }
-}
-
-async function startSession() {
-  const id = document.getElementById("startId").value;
-  try {
-    const r = await fetch(`${BASE}/start/${id}`);
-    show(await r.json());
-  } catch (e) {
-    show(e.message);
-  }
-}
-
-async function pair() {
-  const num = document.getElementById("pairNum").value;
-  try {
-    const r = await fetch(`${BASE}/pair/${num}/`);
-    show(await r.json());
-  } catch (e) {
-    show(e.message);
-  }
-}
-
-async function sessions() {
-  try {
-    const r = await fetch(`${BASE}/sessions`);
-    show(await r.json());
-  } catch (e) {
-    show(e.message);
-  }
-}
-
-async function stopSession() {
-  const id = document.getElementById("stopId").value;
-  try {
-    const r = await fetch(`${BASE}/stop/${id}`, { method: "POST" });
-    show(await r.json());
-  } catch (e) {
-    show(e.message);
-  }
-}
-
-async function logout() {
-  const id = document.getElementById("logoutId").value;
-  try {
-    const r = await fetch(`${BASE}/logout/${id}`, { method: "POST" });
-    show(await r.json());
-  } catch (e) {
-    show(e.message);
-  }
-}
-</script>
-
+    // Allow Enter key
+    document.getElementById('phoneInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') requestCode();
+    });
+  </script>
 </body>
 </html>
