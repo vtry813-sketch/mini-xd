@@ -2,371 +2,1613 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WhatsApp Pairing</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>INCONNU XD — WhatsApp Cloud Pairing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0f0d;
-      --card: #111813;
-      --green: #25d366;
-      --green-glow: rgba(37, 211, 102, 0.18);
-      --green-dim: #1a9e4a;
-      --text: #e8f5e9;
-      --muted: #5a7a63;
-      --border: rgba(37, 211, 102, 0.15);
-      --radius: 16px;
+      --bg: #060912;
+      --surface: #0d1526;
+      --surface2: #111d33;
+      --border: rgba(99,179,237,0.12);
+      --border-active: rgba(99,179,237,0.4);
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --card-glow: 0 0 0 1px rgba(59,130,246,0.1), 0 20px 60px rgba(0,0,0,0.5);
     }
 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
+      font-family: 'Space Grotesk', sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Syne', sans-serif;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* ─── CLOUD BACKGROUND ─── */
+    .cloud-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
       overflow: hidden;
     }
 
-    /* Animated background mesh */
-    body::before {
+    .cloud-bg::before {
       content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(37,211,102,0.07) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(37,211,102,0.05) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%);
+      top: -200px;
+      left: -100px;
+      animation: drift1 20s ease-in-out infinite alternate;
     }
 
-    /* Subtle grid lines */
-    body::after {
+    .cloud-bg::after {
       content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6,182,212,0.05) 0%, transparent 70%);
+      bottom: -100px;
+      right: -100px;
+      animation: drift2 25s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift1 {
+      from { transform: translate(0,0) scale(1); }
+      to { transform: translate(60px, 40px) scale(1.1); }
+    }
+
+    @keyframes drift2 {
+      from { transform: translate(0,0) scale(1); }
+      to { transform: translate(-40px, -30px) scale(1.08); }
+    }
+
+    /* Grid pattern */
+    .grid-overlay {
       position: fixed;
       inset: 0;
+      z-index: 0;
       background-image:
-        linear-gradient(rgba(37,211,102,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(37,211,102,0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
+        linear-gradient(rgba(99,179,237,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,179,237,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
       pointer-events: none;
+    }
+
+    /* ─── FLOATING PARTICLES ─── */
+    .particles {
+      position: fixed;
+      inset: 0;
       z-index: 0;
+      pointer-events: none;
     }
 
-    .container {
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--accent2);
+      border-radius: 50%;
+      opacity: 0;
+      animation: float-up linear infinite;
+    }
+
+    @keyframes float-up {
+      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10% { opacity: 0.6; }
+      90% { opacity: 0.6; }
+      100% { transform: translateY(-100px) translateX(60px); opacity: 0; }
+    }
+
+    /* ─── LAYOUT ─── */
+    .page {
       position: relative;
-      z-index: 1;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px 60px;
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
       width: 100%;
-      max-width: 460px;
-      padding: 20px;
-      animation: fadeUp 0.6s ease both;
+      max-width: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
     }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .logo-row {
+    .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 36px;
     }
 
-    .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: var(--green);
-      border-radius: 12px;
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 20px rgba(37,211,102,0.4);
+      font-size: 18px;
+      color: white;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.4);
     }
 
-    .logo-icon svg { width: 26px; height: 26px; }
-
-    .logo-text {
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      color: var(--text);
-    }
-
-    .logo-text span { color: var(--green); }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 32px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(37,211,102,0.08);
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 8px;
-    }
-
-    h1 em {
-      font-style: normal;
-      color: var(--green);
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      font-size: 0.75rem;
-      margin-bottom: 32px;
-      line-height: 1.6;
-    }
-
-    .field-label {
-      font-size: 0.7rem;
+    .brand-name {
+      font-size: 16px;
       font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+      color: white;
     }
 
-    .input-row {
+    .brand-tag {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .status-pill {
       display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    input[type="tel"] {
-      flex: 1;
-      background: rgba(255,255,255,0.04);
+      align-items: center;
+      gap: 7px;
+      background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 1rem;
-      padding: 14px 16px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      border-radius: 30px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
     }
 
-    input[type="tel"]::placeholder { color: var(--muted); }
-
-    input[type="tel"]:focus {
-      border-color: var(--green);
-      box-shadow: 0 0 0 3px var(--green-glow);
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
     }
 
-    button {
-      background: var(--green);
-      border: none;
-      border-radius: 10px;
-      color: #021a08;
-      cursor: pointer;
-      font-family: 'Syne', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      padding: 14px 20px;
-      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-      white-space: nowrap;
+    .status-dot.offline {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
     }
 
-    button:hover {
-      background: #2fe070;
-      box-shadow: 0 0 16px rgba(37,211,102,0.4);
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
     }
 
-    button:active { transform: scale(0.97); }
-
-    button:disabled {
-      background: var(--muted);
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    /* Result area */
-    .result {
-      display: none;
-      border-radius: 12px;
+    /* ─── MAIN CARD ─── */
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
       overflow: hidden;
-      animation: fadeUp 0.4s ease both;
+      box-shadow: var(--card-glow);
     }
 
-    .result.show { display: block; }
-
-    /* Code display */
-    .code-box {
-      background: rgba(37,211,102,0.07);
-      border: 1px solid var(--green);
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
+    /* ─── SERVER PANEL ─── */
+    .server-panel {
+      padding: 24px 24px 0;
     }
 
-    .code-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
+    .server-panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--green);
+      color: var(--muted);
       margin-bottom: 12px;
     }
 
-    .code-value {
-      font-family: 'Space Mono', monospace;
-      font-size: 2.2rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      color: #fff;
-      text-shadow: 0 0 20px rgba(37,211,102,0.5);
-      word-break: break-all;
+    .server-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      cursor: pointer;
+      transition: border-color 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
     }
 
-    .code-hint {
-      font-size: 0.7rem;
-      color: var(--muted);
-      margin-top: 10px;
-      font-family: 'Space Mono', monospace;
+    .server-card:hover {
+      border-color: var(--border-active);
+      background: rgba(59,130,246,0.05);
     }
 
-    /* Error */
-    .error-box {
-      background: rgba(255, 70, 70, 0.08);
-      border: 1px solid rgba(255,70,70,0.3);
+    .server-card.is-full {
+      border-color: rgba(239,68,68,0.3);
+      background: rgba(239,68,68,0.04);
+    }
+
+    .server-card.is-offline {
+      border-color: rgba(100,116,139,0.3);
+      opacity: 0.7;
+    }
+
+    .server-card-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .server-icon-wrap {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      padding: 16px 20px;
-      color: #ff8080;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.78rem;
-      line-height: 1.6;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: all 0.3s;
     }
 
-    /* Spinner */
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(2,26,8,0.3);
-      border-top-color: #021a08;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+    .server-card.is-full .server-icon-wrap {
+      background: rgba(239,68,68,0.12);
+      border-color: rgba(239,68,68,0.2);
+      color: var(--danger);
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .server-card.is-offline .server-icon-wrap {
+      background: rgba(100,116,139,0.12);
+      color: var(--muted);
     }
 
+    .server-meta {
+      flex: 1;
+    }
+
+    .server-name-display {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 5px;
+    }
+
+    .server-stats-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-chip i {
+      font-size: 10px;
+    }
+
+    /* Session bar */
+    .session-bar-wrap {
+      margin-top: 8px;
+    }
+
+    .session-bar-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .session-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.6s ease;
+    }
+
+    .session-bar-fill.warn { background: linear-gradient(90deg, var(--warn), #f97316); }
+    .session-bar-fill.danger { background: linear-gradient(90deg, var(--danger), #ef4444); }
+
+    /* Change server btn */
+    .change-btn {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      color: var(--accent);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+
+    .change-btn:hover {
+      background: rgba(59,130,246,0.2);
+      border-color: rgba(59,130,246,0.5);
+    }
+
+    /* ─── ALERT BANNERS ─── */
+    .alert {
+      display: none;
+      margin: 14px 24px 0;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      align-items: center;
+      gap: 10px;
+      animation: fadeSlideDown 0.3s ease;
+    }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert.show { display: flex; }
+
+    .alert-full {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #fca5a5;
+    }
+
+    .alert-switching {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.25);
+      color: #fcd34d;
+    }
+
+    .alert-success {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.25);
+      color: #6ee7b7;
+    }
+
+    /* ─── SERVER DRAWER ─── */
+    .server-drawer {
+      display: none;
+      margin: 14px 24px 0;
+      background: rgba(6,9,18,0.8);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      animation: fadeSlideDown 0.3s ease;
+    }
+
+    .server-drawer.open { display: block; }
+
+    .drawer-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .server-option-item {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .server-option-item:last-child { border-bottom: none; }
+
+    .server-option-item:hover { background: rgba(59,130,246,0.05); }
+
+    .server-option-item.selected { background: rgba(59,130,246,0.08); }
+
+    .server-option-item.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .server-option-item.disabled:hover { background: transparent; }
+
+    .opt-left { display: flex; align-items: center; gap: 12px; }
+
+    .opt-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: rgba(59,130,246,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: var(--accent);
+    }
+
+    .opt-icon.full { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .opt-icon.offline { background: rgba(100,116,139,0.1); color: var(--muted); }
+
+    .opt-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .opt-info {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .opt-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(59,130,246,0.12);
+      color: var(--accent);
+    }
+
+    .opt-badge.full { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .opt-badge.offline { background: rgba(100,116,139,0.12); color: var(--muted); }
+    .opt-badge.active { background: rgba(16,185,129,0.12); color: var(--success); }
+
+    /* ─── DIVIDER ─── */
     .divider {
       height: 1px;
       background: var(--border);
-      margin: 28px 0;
+      margin: 24px 0 0;
     }
 
-    .footer {
-      margin-top: 28px;
-      text-align: center;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--muted);
-      letter-spacing: 0.05em;
+    /* ─── FORM AREA ─── */
+    .form-area {
+      padding: 24px;
     }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .input-group .prefix {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .phone-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 16px 16px 50px;
+      color: white;
+      font-size: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 400;
+      letter-spacing: 1px;
+      transition: border-color 0.3s, background 0.3s;
+      outline: none;
+    }
+
+    .phone-input:focus {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.04);
+    }
+
+    .phone-input::placeholder {
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    .input-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── CODE DISPLAY ─── */
+    .code-display {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      transition: all 0.4s ease;
+    }
+
+    .code-display.has-code {
+      border-color: rgba(16,185,129,0.4);
+      background: rgba(16,185,129,0.04);
+    }
+
+    .code-display.has-error {
+      border-color: rgba(239,68,68,0.4);
+      background: rgba(239,68,68,0.04);
+    }
+
+    .code-placeholder-text {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .code-value-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 6px;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .code-value-text i { font-size: 22px; }
+
+    .error-text {
+      color: #fca5a5;
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: left;
+      line-height: 1.5;
+    }
+
+    .error-text i { margin-top: 2px; flex-shrink: 0; }
+
+    /* ─── BUTTONS ─── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+      box-shadow: 0 8px 25px rgba(59,130,246,0.3);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-primary:hover::before { opacity: 1; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(59,130,246,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-primary:disabled {
+      background: linear-gradient(135deg, #374151, #4b5563);
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* ─── LOADING ─── */
+    .loading-area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 0;
+      margin-bottom: 16px;
+    }
+
+    .loading-ring {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(59,130,246,0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ─── SESSIONS PANEL ─── */
+    .sessions-panel {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .sessions-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sessions-header-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sessions-header-title i { color: var(--accent); }
+
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 6px;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .refresh-btn:hover { color: var(--accent); background: rgba(59,130,246,0.08); }
+
+    .sessions-body {
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .session-row {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 13px;
+    }
+
+    .session-row:last-child { border-bottom: none; }
+
+    .session-id-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-running { background: rgba(16,185,129,0.12); color: var(--success); }
+    .badge-stopped { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+    .empty-state {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ─── INFO CARD ─── */
+    .info-card {
+      background: rgba(59,130,246,0.05);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .info-card i { color: var(--accent); font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+
+    .info-card-content { flex: 1; }
+
+    .info-card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+
+    .info-card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ─── ALTERNATIVE SECTION ─── */
+    .alt-section {
+      background: rgba(124,58,237,0.05);
+      border: 1px solid rgba(124,58,237,0.15);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .alt-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #c4b5fd; }
+
+    .alt-links { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .alt-link {
+      flex: 1;
+      min-width: 140px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: white;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .alt-link:hover {
+      background: rgba(124,58,237,0.15);
+      border-color: rgba(124,58,237,0.3);
+      transform: translateY(-2px);
+    }
+
+    /* ─── SOCIAL & FOOTER ─── */
+    .social-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+
+    .social-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 17px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .social-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-3px);
+      background: rgba(59,130,246,0.08);
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 18px;
+    }
+
+    .footer-text span { color: var(--accent); }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9999;
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s;
+      opacity: 0;
+      white-space: nowrap;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success i { color: var(--success); }
+    .toast.error i { color: var(--danger); }
+    .toast.warning i { color: var(--warn); }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,179,237,0.2); border-radius: 10px; }
+
+    /* ─── COUNTDOWN BADGE ─── */
+    .countdown-badge {
+      display: none;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #fcd34d;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .countdown-badge.show { display: block; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo-row">
-      <div class="logo-icon">
-        <!-- WhatsApp icon SVG -->
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 3C9.373 3 4 8.373 4 15c0 2.385.668 4.61 1.826 6.5L4 29l7.703-1.803A11.94 11.94 0 0016 28c6.627 0 12-5.373 12-12S22.627 3 16 3z" fill="#021a08"/>
-          <path d="M21.5 18.5c-.3-.15-1.8-.9-2.07-.99-.28-.1-.48-.15-.68.15-.2.3-.77.99-.95 1.19-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.68-2.08-.17-.3-.02-.46.13-.61.13-.13.3-.34.44-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.68-1.63-.93-2.23-.24-.58-.49-.5-.68-.51H12.2c-.18 0-.48.07-.74.34-.25.27-.97.95-.97 2.32 0 1.37 1 2.7 1.14 2.89.15.2 1.97 3.01 4.77 4.22.67.29 1.19.46 1.6.59.67.21 1.28.18 1.76.11.54-.08 1.65-.67 1.88-1.32.23-.65.23-1.2.16-1.32-.07-.12-.27-.2-.57-.34z" fill="#25d366"/>
-        </svg>
+
+<div class="cloud-bg"></div>
+<div class="grid-overlay"></div>
+<div class="particles" id="particles"></div>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-cloud"></i></div>
+      <div>
+        <div class="brand-name">INCONNU XD</div>
+        <div class="brand-tag">Cloud Pairing System</div>
       </div>
-      <div class="logo-text">WA<span>Pair</span></div>
     </div>
-
-    <div class="card">
-      <h1>Lier votre<br/><em>WhatsApp</em></h1>
-      <p class="subtitle">Entrez votre numéro avec indicatif pays (sans +)<br/>pour obtenir votre code de jumelage.</p>
-
-      <div class="field-label">Numéro de téléphone</div>
-      <div class="input-row">
-        <input type="tel" id="phoneInput" placeholder="ex: 33612345678" maxlength="15"/>
-        <button id="pairBtn" onclick="requestCode()">Obtenir</button>
-      </div>
-
-      <div class="result" id="result"></div>
+    <div class="status-pill">
+      <div class="status-dot" id="globalStatusDot"></div>
+      <span id="globalStatusText">Online</span>
     </div>
-
-    <div class="footer">Baileys Multi-Session &nbsp;·&nbsp; Pair Code Ready</div>
   </div>
 
-  <script>
-    async function requestCode() {
-      const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
-      const btn = document.getElementById('pairBtn');
-      const result = document.getElementById('result');
+  <div class="card">
 
-      if (!phone || phone.length < 6) {
-        showError('Veuillez entrer un numéro valide.');
-        return;
+    <!-- SERVER PANEL -->
+    <div class="server-panel">
+      <div class="server-panel-label"><i class="fas fa-server" style="margin-right:6px;"></i>Active Node</div>
+
+      <div class="server-card" id="serverCard">
+        <div class="server-card-left">
+          <div class="server-icon-wrap" id="serverIconWrap">
+            <i class="fas fa-cloud" id="serverCardIcon"></i>
+          </div>
+          <div class="server-meta">
+            <div class="server-name-display" id="serverCardName">Server 1</div>
+            <div class="server-stats-row">
+              <div class="stat-chip">
+                <i class="fas fa-circle" id="statusIcon" style="color: var(--success); font-size:8px;"></i>
+                <span id="statusText">Online</span>
+              </div>
+              <div class="stat-chip">
+                <i class="fas fa-users"></i>
+                <span id="sessionCountText">0 / 25</span>
+              </div>
+            </div>
+            <div class="session-bar-wrap">
+              <div class="session-bar-track">
+                <div class="session-bar-fill" id="sessionBarFill" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="change-btn" id="changeServerBtn">
+          <i class="fas fa-random"></i> Switch
+        </button>
+      </div>
+
+      <!-- Alerts -->
+      <div class="alert alert-full" id="alertFull">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="alertFullText">This server is FULL (25/25). Switching automatically...</span>
+      </div>
+      <div class="alert alert-switching" id="alertSwitching">
+        <i class="fas fa-sync-alt fa-spin"></i>
+        <span id="alertSwitchingText">Auto-switching to available server...</span>
+      </div>
+      <div class="alert alert-success" id="alertSuccess">
+        <i class="fas fa-check-circle"></i>
+        <span id="alertSuccessText">Switched successfully!</span>
+      </div>
+
+      <div class="countdown-badge" id="countdownBadge">
+        ⚡ Auto-switching in <span id="countdownNum">5</span>s...
+      </div>
+
+      <!-- Server Drawer -->
+      <div class="server-drawer" id="serverDrawer">
+        <div class="drawer-header"><i class="fas fa-layer-group" style="margin-right:8px;"></i>Select Server</div>
+        <div id="serverList"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FORM AREA -->
+    <div class="form-area">
+
+      <!-- Sessions -->
+      <div class="sessions-panel">
+        <div class="sessions-header">
+          <div class="sessions-header-title"><i class="fas fa-stream"></i> Active Sessions</div>
+          <button class="refresh-btn" id="refreshBtn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="sessions-body" id="sessionsBody">
+          <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="info-card">
+        <i class="fas fa-info-circle"></i>
+        <div class="info-card-content">
+          <div class="info-card-title">How to Pair</div>
+          <div class="info-card-desc">Enter your WhatsApp number (without +), generate a code, then go to WhatsApp → Linked Devices → Link with phone number → enter the code.</div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="section-title"><i class="fas fa-mobile-alt" style="margin-right:7px;"></i>WhatsApp Number</div>
+
+      <div class="input-group">
+        <i class="fas fa-phone-alt prefix"></i>
+        <input type="tel" class="phone-input" id="phoneNumber" placeholder="5511999999999" pattern="[0-9]+"/>
+      </div>
+
+      <div class="input-hint">
+        <i class="fas fa-lightbulb" style="color:var(--accent);"></i>
+        Without + symbol — e.g. 5511999999999 (Brazil)
+      </div>
+
+      <div style="height:18px;"></div>
+
+      <!-- Code display -->
+      <div class="code-display" id="codeDisplay">
+        <div class="code-placeholder-text"><i class="fas fa-key" style="margin-right:8px;opacity:0.4;"></i>Code will appear here</div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-area" id="loadingArea">
+        <div class="loading-ring"></div>
+        <div class="loading-label">Requesting pairing code...</div>
+      </div>
+
+      <button class="btn-primary" id="generateBtn">
+        <i class="fas fa-bolt"></i> Generate Pair Code
+      </button>
+
+      <button class="btn-secondary" id="copyBtn">
+        <i class="fas fa-copy"></i> Copy Code
+      </button>
+
+      <!-- Alternative -->
+      <div class="alt-section">
+        <div class="alt-title"><i class="fas fa-link" style="margin-right:6px;"></i>Alternative Methods</div>
+        <div class="alt-links">
+          <a href="https://t.me/queen_akuma_bot" target="_blank" class="alt-link">
+            <i class="fab fa-telegram"></i> Telegram Bot
+          </a>
+          <a href="https://t.me/+f5MXTmwwdeU2Y2Ux" target="_blank" class="alt-link">
+            <i class="fas fa-users"></i> Telegram Group
+          </a>
+        </div>
+      </div>
+
+      <!-- Social -->
+      <div class="social-row">
+        <a href="https://whatsapp.com/channel/0029VbC6It7K0IBkQwaKYd2J" target="_blank" class="social-btn"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://chat.whatsapp.com/HVdyhSroS6h3HoCbankB8X" target="_blank" class="social-btn"><i class="fas fa-comments"></i></a>
+        <a href="https://youtu.be/n09eZbKexQY?si=r_n6K596sdT6l0Qe" target="_blank" class="social-btn"><i class="fab fa-youtube"></i></a>
+        <a href="https://t.me/+f5MXTmwwdeU2Y2Ux" target="_blank" class="social-btn"><i class="fab fa-telegram"></i></a>
+      </div>
+
+      <div class="footer-text">
+        © 2026 INCONNU XD · Node: <span id="footerNode">Server 1</span> · Created by <span>Dev Inconnu Boy</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i class="fas fa-check-circle"></i>
+  <span id="toastMsg">Done</span>
+</div>
+
+<script>
+  // ══════════════════════════════════════════════
+  //  CONFIG: 2 serveurs — ajouter plus tard ici
+  // ══════════════════════════════════════════════
+  const MAX_SESSIONS = 25;
+
+  const SERVERS = [
+    {
+      id: 'server1',
+      name: 'Server 1',
+      url: 'https://new-production-0876.up.railway.app',
+      activeSessions: 0,
+      isOnline: true,
+      isFull: false
+    },
+    {
+      id: 'server2',
+      name: 'Server 2',
+      url: 'https://test-production-ca3f.up.railway.app',
+      activeSessions: 0,
+      isOnline: true,
+      isFull: false
+    }
+    // ← Ajouter d'autres serveurs ici plus tard
+  ];
+
+  // ══════════════════════════════════════════════
+  //  STATE
+  // ══════════════════════════════════════════════
+  let currentServer = SERVERS[0];
+  let currentCode = null;
+  let drawerOpen = false;
+  let autoSwitchTimer = null;
+  let countdownInterval = null;
+  let allServersFull = false;
+
+  // ══════════════════════════════════════════════
+  //  DOM
+  // ══════════════════════════════════════════════
+  const $ = id => document.getElementById(id);
+  const serverCard      = $('serverCard');
+  const serverCardName  = $('serverCardName');
+  const serverCardIcon  = $('serverCardIcon');
+  const serverIconWrap  = $('serverIconWrap');
+  const statusIcon      = $('statusIcon');
+  const statusText      = $('statusText');
+  const sessionCountText= $('sessionCountText');
+  const sessionBarFill  = $('sessionBarFill');
+  const changeServerBtn = $('changeServerBtn');
+  const serverDrawer    = $('serverDrawer');
+  const serverList      = $('serverList');
+  const alertFull       = $('alertFull');
+  const alertSwitching  = $('alertSwitching');
+  const alertSuccess    = $('alertSuccess');
+  const countdownBadge  = $('countdownBadge');
+  const countdownNum    = $('countdownNum');
+  const sessionsBody    = $('sessionsBody');
+  const refreshBtn      = $('refreshBtn');
+  const phoneInput      = $('phoneNumber');
+  const generateBtn     = $('generateBtn');
+  const loadingArea     = $('loadingArea');
+  const codeDisplay     = $('codeDisplay');
+  const copyBtn         = $('copyBtn');
+  const footerNode      = $('footerNode');
+  const globalStatusDot = $('globalStatusDot');
+  const globalStatusText= $('globalStatusText');
+  const toast           = $('toast');
+  const toastMsg        = $('toastMsg');
+
+  // ══════════════════════════════════════════════
+  //  PARTICLES
+  // ══════════════════════════════════════════════
+  function createParticles() {
+    const container = $('particles');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
+      p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      container.appendChild(p);
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  TOAST
+  // ══════════════════════════════════════════════
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    clearTimeout(toastTimer);
+    toast.className = `toast ${type} show`;
+    const icon = toast.querySelector('i');
+    icon.className = type === 'success' ? 'fas fa-check-circle'
+                   : type === 'error'   ? 'fas fa-exclamation-circle'
+                   :                      'fas fa-exclamation-triangle';
+    toastMsg.textContent = msg;
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  // ══════════════════════════════════════════════
+  //  ALERTS
+  // ══════════════════════════════════════════════
+  function hideAllAlerts() {
+    alertFull.classList.remove('show');
+    alertSwitching.classList.remove('show');
+    alertSuccess.classList.remove('show');
+    countdownBadge.classList.remove('show');
+  }
+
+  function showAlert(el, text = null) {
+    hideAllAlerts();
+    if (text) el.querySelector('span').textContent = text;
+    el.classList.add('show');
+  }
+
+  // ══════════════════════════════════════════════
+  //  UPDATE SERVER UI
+  // ══════════════════════════════════════════════
+  function updateServerUI() {
+    const s = currentServer;
+    serverCardName.textContent = s.name;
+    footerNode.textContent = s.name;
+
+    const pct = Math.round((s.activeSessions / MAX_SESSIONS) * 100);
+    sessionCountText.textContent = `${s.activeSessions} / ${MAX_SESSIONS}`;
+    sessionBarFill.style.width = pct + '%';
+    sessionBarFill.className = 'session-bar-fill' +
+      (pct >= 100 ? ' danger' : pct >= 70 ? ' warn' : '');
+
+    if (!s.isOnline) {
+      serverCard.className = 'server-card is-offline';
+      serverIconWrap.className = 'server-icon-wrap offline';
+      serverCardIcon.className = 'fas fa-times-circle';
+      statusIcon.style.color = 'var(--muted)';
+      statusText.textContent = 'Offline';
+      globalStatusDot.className = 'status-dot offline';
+      globalStatusText.textContent = 'Offline';
+    } else if (s.isFull) {
+      serverCard.className = 'server-card is-full';
+      serverIconWrap.className = 'server-icon-wrap';
+      serverCardIcon.className = 'fas fa-cloud';
+      statusIcon.style.color = 'var(--danger)';
+      statusText.textContent = 'Full';
+      globalStatusDot.className = 'status-dot offline';
+      globalStatusText.textContent = 'Server Full';
+    } else {
+      serverCard.className = 'server-card';
+      serverIconWrap.className = 'server-icon-wrap';
+      serverCardIcon.className = 'fas fa-cloud';
+      statusIcon.style.color = 'var(--success)';
+      statusText.textContent = 'Online';
+      globalStatusDot.className = 'status-dot';
+      globalStatusText.textContent = 'Online';
+    }
+
+    // Generate button
+    if (!s.isOnline || s.isFull) {
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = s.isFull
+        ? '<i class="fas fa-ban"></i> Server Full — Switch Required'
+        : '<i class="fas fa-times"></i> Server Offline';
+    } else {
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<i class="fas fa-bolt"></i> Generate Pair Code';
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  SERVER DRAWER
+  // ══════════════════════════════════════════════
+  function renderDrawer() {
+    serverList.innerHTML = '';
+    SERVERS.forEach(s => {
+      const isSelected = s.id === currentServer.id;
+      const isDisabled = s.isFull || !s.isOnline;
+      const pct = Math.round((s.activeSessions / MAX_SESSIONS) * 100);
+
+      const div = document.createElement('div');
+      div.className = 'server-option-item' +
+        (isSelected ? ' selected' : '') +
+        (isDisabled ? ' disabled' : '');
+
+      const badgeClass = !s.isOnline ? 'offline' : s.isFull ? 'full' : isSelected ? 'active' : '';
+      const badgeText  = !s.isOnline ? 'Offline'  : s.isFull ? 'Full'   : isSelected ? 'Active' : `${s.activeSessions}/${MAX_SESSIONS}`;
+      const iconClass  = !s.isOnline ? 'offline'  : s.isFull ? 'full'   : '';
+
+      div.innerHTML = `
+        <div class="opt-left">
+          <div class="opt-icon ${iconClass}">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <div>
+            <div class="opt-name">${s.name}</div>
+            <div class="opt-info">${pct}% capacity · ${s.activeSessions}/${MAX_SESSIONS} sessions</div>
+          </div>
+        </div>
+        <span class="opt-badge ${badgeClass}">${badgeText}</span>
+      `;
+
+      if (!isDisabled) {
+        div.addEventListener('click', () => switchToServer(s.id, true));
       }
-
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Patientez...';
-      result.className = 'result';
-      result.innerHTML = '';
-
-      try {
-        const res = await fetch(`/pair/${phone}/`);
-        const data = await res.json();
-
-        if (data.ok && data.code) {
-          showCode(data.code, data.cleanNumber || phone);
-        } else {
-          showError(data.error || 'Une erreur est survenue.');
-        }
-      } catch (e) {
-        showError('Impossible de joindre le serveur.');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Régénérer';
-      }
-    }
-
-    function showCode(code, num) {
-      const result = document.getElementById('result');
-      result.innerHTML = `
-        <div class="code-box">
-          <div class="code-label">✅ Code de jumelage</div>
-          <div class="code-value">${escapeHtml(code)}</div>
-          <div class="code-hint">Pour le numéro +${escapeHtml(num)}</div>
-          <div class="code-hint" style="margin-top:6px">Entrez ce code dans WhatsApp → Appareils liés → Lier avec un numéro</div>
-        </div>`;
-      result.classList.add('show');
-    }
-
-    function showError(msg) {
-      const result = document.getElementById('result');
-      result.innerHTML = `<div class="error-box">⚠ ${escapeHtml(msg)}</div>`;
-      result.classList.add('show');
-    }
-
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    // Allow Enter key
-    document.getElementById('phoneInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') requestCode();
+      serverList.appendChild(div);
     });
-  </script>
+  }
+
+  function toggleDrawer() {
+    drawerOpen = !drawerOpen;
+    if (drawerOpen) {
+      renderDrawer();
+      serverDrawer.classList.add('open');
+      changeServerBtn.innerHTML = '<i class="fas fa-times"></i> Close';
+    } else {
+      serverDrawer.classList.remove('open');
+      changeServerBtn.innerHTML = '<i class="fas fa-random"></i> Switch';
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  FIND BEST SERVER (online + not full + least load)
+  // ══════════════════════════════════════════════
+  function findBestAvailableServer(excludeId = null) {
+    const available = SERVERS.filter(s =>
+      s.isOnline && !s.isFull && s.id !== excludeId
+    ).sort((a, b) => a.activeSessions - b.activeSessions);
+    return available[0] || null;
+  }
+
+  // ══════════════════════════════════════════════
+  //  SWITCH SERVER
+  // ══════════════════════════════════════════════
+  async function switchToServer(serverId, manual = false) {
+    const target = SERVERS.find(s => s.id === serverId);
+    if (!target || target.id === currentServer.id) return;
+
+    currentServer = target;
+    localStorage.setItem('selectedServerId', serverId);
+
+    clearAutoSwitch();
+    hideAllAlerts();
+
+    if (drawerOpen) toggleDrawer();
+
+    updateServerUI();
+    renderDrawer();
+
+    showAlert(alertSuccess, `✓ Switched to ${target.name}`);
+    showToast(`Switched to ${target.name}`, 'success');
+    setTimeout(() => alertSuccess.classList.remove('show'), 3000);
+
+    await loadSessions();
+  }
+
+  // ══════════════════════════════════════════════
+  //  AUTO SWITCH LOGIC
+  // ══════════════════════════════════════════════
+  function clearAutoSwitch() {
+    if (autoSwitchTimer) { clearTimeout(autoSwitchTimer); autoSwitchTimer = null; }
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    countdownBadge.classList.remove('show');
+  }
+
+  function scheduleAutoSwitch() {
+    clearAutoSwitch();
+    const best = findBestAvailableServer(currentServer.id);
+    if (!best) return; // pas d'autre serveur dispo
+
+    let secs = 5;
+    countdownNum.textContent = secs;
+    countdownBadge.classList.add('show');
+
+    countdownInterval = setInterval(() => {
+      secs--;
+      countdownNum.textContent = secs;
+      if (secs <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+    }, 1000);
+
+    autoSwitchTimer = setTimeout(async () => {
+      const freshBest = findBestAvailableServer(currentServer.id);
+      if (freshBest) {
+        showAlert(alertSwitching, `Auto-switching to ${freshBest.name}...`);
+        await new Promise(r => setTimeout(r, 800));
+        await switchToServer(freshBest.id, false);
+      }
+    }, 5000);
+  }
+
+  // ══════════════════════════════════════════════
+  //  LOAD SESSIONS
+  // ══════════════════════════════════════════════
+  async function loadSessions() {
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    let sessions = [];
+    let online = false;
+
+    try {
+      const res = await axios.get(`${currentServer.url}/sessions`, { timeout: 10000 });
+      sessions = res.data.sessions || [];
+      online = true;
+    } catch (e) {
+      online = false;
+    }
+
+    // Update current server state
+    const wasOnline = currentServer.isOnline;
+    const wasFull   = currentServer.isFull;
+
+    currentServer.isOnline = online;
+    if (online) {
+      const running = sessions.filter(s => s.running).length;
+      currentServer.activeSessions = running;
+      currentServer.isFull = running >= MAX_SESSIONS;
+    }
+
+    updateServerUI();
+
+    // ── TRIGGERS ──────────────────────────────
+    // 1. Server just went OFFLINE → auto switch
+    if (wasOnline && !online) {
+      showToast(`${currentServer.name} is offline! Looking for alternative...`, 'error');
+      showAlert(alertFull, `${currentServer.name} is offline. Auto-switching...`);
+      scheduleAutoSwitch();
+    }
+    // 2. Server just became FULL → auto switch
+    else if (!wasFull && currentServer.isFull) {
+      showToast(`${currentServer.name} reached 25 sessions! Switching automatically...`, 'warning');
+      showAlert(alertFull, `${currentServer.name} is full (25/25 sessions). Auto-switching in 5s...`);
+      scheduleAutoSwitch();
+    }
+    // 3. Server was full but now has space
+    else if (wasFull && !currentServer.isFull && online) {
+      clearAutoSwitch();
+      hideAllAlerts();
+    }
+    // 4. Server was offline but came back
+    else if (!wasOnline && online) {
+      clearAutoSwitch();
+      hideAllAlerts();
+      showToast(`${currentServer.name} is back online!`, 'success');
+    }
+
+    // Render sessions
+    if (!online) {
+      sessionsBody.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:8px;"></i>Cannot reach server</div>`;
+    } else if (sessions.length === 0) {
+      sessionsBody.innerHTML = `<div class="empty-state">No active sessions</div>`;
+    } else {
+      sessionsBody.innerHTML = sessions.map(s => `
+        <div class="session-row">
+          <span class="session-id-mono">${s.id || 'Unknown'}</span>
+          <span class="badge ${s.running ? 'badge-running' : 'badge-stopped'}">${s.running ? 'Running' : 'Stopped'}</span>
+        </div>
+      `).join('');
+    }
+
+    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+    return sessions;
+  }
+
+  // ══════════════════════════════════════════════
+  //  GENERATE PAIR CODE
+  // ══════════════════════════════════════════════
+  async function generatePairCode(e) {
+    if (e) e.preventDefault();
+
+    // Block if full or offline
+    if (currentServer.isFull) {
+      const best = findBestAvailableServer(currentServer.id);
+      if (best) {
+        showCodeError(`Server is full (25/25). Please switch to ${best.name} or wait for auto-switch.`);
+        if (!drawerOpen) toggleDrawer();
+        scheduleAutoSwitch();
+      } else {
+        showCodeError('All servers are currently full (25/25 sessions). Please try again later.');
+        showToast('All servers are full. Please wait.', 'error');
+        // Marquer état global
+        allServersFull = true;
+      }
+      return;
+    }
+
+    if (!currentServer.isOnline) {
+      showCodeError('Server is offline. Please switch to another server.');
+      if (!drawerOpen) toggleDrawer();
+      return;
+    }
+
+    const phone = phoneInput.value.trim();
+    if (!phone) { showCodeError('Please enter your WhatsApp number.'); return; }
+    if (!/^\d{6,15}$/.test(phone)) { showCodeError('Invalid phone number (6-15 digits, no +).'); return; }
+
+    // Show loading
+    generateBtn.style.display = 'none';
+    loadingArea.style.display = 'flex';
+    resetCode();
+
+    try {
+      const res = await axios.get(`${currentServer.url}/pair/${phone}`, { timeout: 60000 });
+
+      if (res.data.ok && res.data.code) {
+        showCode(res.data.code);
+        showToast('Pair code generated!', 'success');
+        // Refresh sessions
+        await loadSessions();
+      } else {
+        throw new Error(res.data.error || 'Failed to generate code');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed to generate code';
+      showCodeError(msg);
+      showToast('Error generating code', 'error');
+    } finally {
+      generateBtn.style.display = 'flex';
+      loadingArea.style.display = 'none';
+    }
+  }
+
+  function showCode(code) {
+    currentCode = code;
+    codeDisplay.className = 'code-display has-code';
+    codeDisplay.innerHTML = `<div class="code-value-text"><i class="fas fa-check-circle"></i>${code}</div>`;
+    copyBtn.style.display = 'flex';
+  }
+
+  function showCodeError(msg) {
+    codeDisplay.className = 'code-display has-error';
+    codeDisplay.innerHTML = `<div class="error-text"><i class="fas fa-exclamation-circle"></i>${msg}</div>`;
+    copyBtn.style.display = 'none';
+  }
+
+  function resetCode() {
+    currentCode = null;
+    codeDisplay.className = 'code-display';
+    codeDisplay.innerHTML = '<div class="code-placeholder-text"><i class="fas fa-key" style="margin-right:8px;opacity:0.4;"></i>Code will appear here</div>';
+    copyBtn.style.display = 'none';
+  }
+
+  async function copyCode() {
+    if (!currentCode) return;
+    try {
+      await navigator.clipboard.writeText(currentCode);
+      const orig = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      copyBtn.disabled = true;
+      showToast('Code copied!', 'success');
+      setTimeout(() => { copyBtn.innerHTML = orig; copyBtn.disabled = false; }, 2000);
+    } catch {
+      showToast('Copy failed', 'error');
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  INIT
+  // ══════════════════════════════════════════════
+  async function init() {
+    createParticles();
+
+    // Restore server from localStorage
+    const saved = localStorage.getItem('selectedServerId');
+    if (saved) {
+      const s = SERVERS.find(x => x.id === saved);
+      if (s) currentServer = s;
+    }
+
+    updateServerUI();
+    renderDrawer();
+
+    // Events
+    changeServerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleDrawer(); });
+    document.addEventListener('click', (e) => {
+      if (drawerOpen && !serverDrawer.contains(e.target) && !changeServerBtn.contains(e.target)) {
+        toggleDrawer();
+      }
+    });
+
+    refreshBtn.addEventListener('click', loadSessions);
+    document.getElementById('pairForm')?.addEventListener('submit', generatePairCode);
+    generateBtn.addEventListener('click', generatePairCode);
+    copyBtn.addEventListener('click', copyCode);
+
+    phoneInput.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/[^\d]/g, '');
+    });
+    phoneInput.addEventListener('focus', () => {
+      if (codeDisplay.classList.contains('has-error')) resetCode();
+    });
+
+    // Load initial data
+    await loadSessions();
+
+    // Auto-refresh every 30s
+    setInterval(loadSessions, 30000);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<form id="pairForm" style="display:none;"></form>
+
 </body>
 </html>
